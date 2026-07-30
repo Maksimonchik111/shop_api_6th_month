@@ -1,7 +1,25 @@
+from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import ConfirmationCode, CustomUser
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["phone_number"] = user.phone_number
+        token["email"] = user.email
+        token["is_staff"] = user.is_staff
+        token["is_active"] = user.is_active
+        if user.birthday:
+            token["birthday"] = user.birthday.isoformat()
+        else:
+            token["birthday"] = None
+
+        return token
 
 
 class UserBaseSerializer(serializers.Serializer):
@@ -14,26 +32,12 @@ class AuthValidateSerializer(UserBaseSerializer):
 
 
 class RegisterValidateSerializer(UserBaseSerializer):
-    phone_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    is_superuser = serializers.BooleanField(default=False)
     def validate_email(self, email):
         try:
-            CustomUser.objects.get(email=email)
-            raise ValidationError("User уже существует!")
+            User.objects.get(email=email)
         except:
             return email
-
-
-    def validate(self, attrs):
-        is_superuser = attrs.get('is_superuser', False)
-        phone_number = attrs.get('phone_number')
-
-        if is_superuser and not phone_number:
-            raise ValidationError({
-                "phone_number": "Номер телефона обязателен для суперюзера"
-            })
-
-        return attrs
+        raise ValidationError("User уже существует!")
 
 
 class ConfirmationSerializer(serializers.Serializer):

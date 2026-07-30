@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "product",
     "users",
     "rest_framework.authtoken",
@@ -60,6 +62,7 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         # "rest_framework.authentication.SessionAuthentication",
     ],
 }
@@ -166,7 +169,24 @@ SWAGGER_SETTINGS = {
         "AuthToken": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header"
-        }
+            "in": "header",
+        },
+        "SimpleJWT": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+        },
     }
+}
+
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=360),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "TOKEN_OBTAIN_SERIALIZER": "users.serializers.CustomTokenObtainPairSerializer",
 }
