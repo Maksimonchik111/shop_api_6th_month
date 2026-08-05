@@ -94,6 +94,7 @@ class ProductListCreateAPIView(ListCreateAPIView):
                         status=status.HTTP_201_CREATED)
 
 
+
 class ProductDetailAPIView(RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer

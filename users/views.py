@@ -2,13 +2,14 @@ import random
 import string
 
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.db import transaction
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 
-from .models import ConfirmationCode, CustomUser
+from .models import CustomUser
 from .serializers import (
     AuthValidateSerializer,
     ConfirmationSerializer,
@@ -51,16 +52,14 @@ class RegistrationAPIView(CreateAPIView):
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
 
-        # Use transaction to ensure data consistency
         with transaction.atomic():
             user = CustomUser.objects.create_user(
                 email=email, password=password, is_active=False
             )
 
-            # Create a random 6-digit code
             code = "".join(random.choices(string.digits, k=6))
 
-            confirmation_code = ConfirmationCode.objects.create(user=user, code=code)
+            cache.set(f"confirmation_code:{user.id}", code, timeout=300)
 
         return Response(
             status=status.HTTP_201_CREATED,
@@ -84,7 +83,7 @@ class ConfirmUserAPIView(CreateAPIView):
 
             token, _ = Token.objects.get_or_create(user=user)
 
-            ConfirmationCode.objects.filter(user=user).delete()
+            cache.delete(f"confirmation_code:{user_id}")
 
         return Response(
             status=status.HTTP_200_OK,
