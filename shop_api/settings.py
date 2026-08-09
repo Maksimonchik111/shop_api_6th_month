@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-
+from celery.schedules import crontab
 from django.conf.global_settings import CACHES
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -201,4 +201,15 @@ CACHES = {
             "CLIENT_CLASs": "django_redis.client.DefaultClient"
         }
     }
+}
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/6"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/6"
+
+
+CELERY_BEAT_SCHEDULE = {
+    'delete-unconfirmed-users-nightly': {
+        'task': 'users.tasks.delete_unconfirmed_users',
+        'schedule': crontab(hour=2, minute=0),
+    },
 }

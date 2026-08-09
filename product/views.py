@@ -17,8 +17,8 @@ from .serializers import (
     ProductValidateSerializer,
     ReviewValidateSerializer
 )
-from rest_framework.permissions import IsAuthenticated
 from common.permissions import IsOwner, IsAnonymous, CanEdit, IsModerator
+from .tasks import recalculate_product_rating, send_new_review_notification
 
 PAGE_SIZE = 5
 
@@ -136,7 +136,12 @@ class ReviewViewSet(ModelViewSet):
             stars=stars,
             product=product
         )
-
+        recalculate_product_rating.delay(product.id)
+        send_new_review_notification.delay(
+            product_title=review.product.title,
+            stars=review.stars,
+            text=review.text
+        )
         return Response(data=ReviewSerializer(review).data,
                         status=status.HTTP_201_CREATED)
 
@@ -149,6 +154,7 @@ class ReviewViewSet(ModelViewSet):
         review.stars = serializer.validated_data.get('stars')
         review.product = serializer.validated_data.get('product')
         review.save()
+        recalculate_product_rating.delay(review.product.id)
 
         return Response(data=ReviewSerializer(review).data)
 
